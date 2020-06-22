@@ -12,7 +12,7 @@
 #define SPARKING 120
 
 // This gets nerfed by the call to setMaxPowerInVoltsAndMilliamps below
-#define BRIGHTNESS  255
+#define BRIGHTNESS  25
 
 
 // LED Data
@@ -32,7 +32,6 @@ void setup() {
 
   // Start up the serial interface
   Serial.begin(9600);
-  while (!Serial); // Wait for Serial
   Serial.println("Starting...");
 
   // Print out the list of I2C devices that are discovered
@@ -56,7 +55,7 @@ void setup() {
   
   // Adjust this to limit the amount of current flowing through Teensy
   // Up this from 250 when connecting directly to the battery pack
-  FastLED.setMaxPowerInVoltsAndMilliamps(5, 250);
+  //FastLED.setMaxPowerInVoltsAndMilliamps(5, 250);
 }
 
 void loop() {
