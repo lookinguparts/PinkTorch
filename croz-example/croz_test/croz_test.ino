@@ -12,8 +12,7 @@
 #define SPARKING 120
 
 // This gets nerfed by the call to setMaxPowerInVoltsAndMilliamps below
-#define BRIGHTNESS  25
-
+#define BRIGHTNESS  255
 
 // LED Data
 bool gReverseDirection = false;
@@ -55,7 +54,7 @@ void setup() {
   
   // Adjust this to limit the amount of current flowing through Teensy
   // Up this from 250 when connecting directly to the battery pack
-  //FastLED.setMaxPowerInVoltsAndMilliamps(5, 250);
+  FastLED.setMaxPowerInVoltsAndMilliamps(5, 250);
 }
 
 void loop() {
