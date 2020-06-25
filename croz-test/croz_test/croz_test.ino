@@ -6,7 +6,7 @@
 #define LED_PIN     6
 #define COLOR_ORDER GRB
 #define CHIPSET     WS2813
-#define NUM_LEDS    144
+#define NUM_LEDS    212
 #define FRAMES_PER_SECOND 60
 #define COOLING  55
 #define SPARKING 120
@@ -54,7 +54,7 @@ void setup() {
   
   // Adjust this to limit the amount of current flowing through Teensy
   // Up this from 250 when connecting directly to the battery pack
-  FastLED.setMaxPowerInVoltsAndMilliamps(5, 250);
+  FastLED.setMaxPowerInVoltsAndMilliamps(5, 2500);
 }
 
 void loop() {
