@@ -104,7 +104,7 @@ void loop() {
   int y = abs(event.orientation.y);
   int brightness = 0;
   if (y > CLIFF) {
-    // Linear transitoin from cliff to fully upgright
+    // Linear transitoin from cliff to fully upright
     // Default = 90 to 70
     brightness = MAX_BRIGHTNESS - (MAX_Y - y) * ((MAX_BRIGHTNESS - MID_BRIGHTNESS) / CLIFF_DEGREES);
   } else {
