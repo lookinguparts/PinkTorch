@@ -19,19 +19,26 @@
 // Default 120, suggested range 50-200.
 #define SPARKING 120
 
+// The max brightness at 90 degrees
 #define MAX_BRIGHTNESS 255
-#define MID_BRIGHTNESS 55
-#define MIN_BRIGHTNESS 10
-#define MAX_Y 90.0
-#define CLIFF_DEGREES 20.0
-#define CLIFF (MAX_Y - CLIFF_DEGREES)
 
-// the large the number, the less frequent
+// The max brightness at the "cliff"
+#define MID_BRIGHTNESS 55
+
+// The minimum brightness
+#define MIN_BRIGHTNESS 10
+
+// The angle subtracted from 90 where the cliff starts (20 = 70 deg)
+#define CLIFF_DEGREES 20.0
+
+// the large the number, the less frequent the flicker happens
 // 60 is approximately once per second
 // 0 = disabled
 #define FLICKER_RANDOMNESS 180
 
-
+// Do not change
+#define MAX_Y 90.0
+#define CLIFF (MAX_Y - CLIFF_DEGREES)
 // LED Data
 bool gReverseDirection = false;
 long frame = 0;
@@ -91,21 +98,12 @@ void loop() {
   Serial.println("");
 
   int y = abs(event.orientation.y);
-  
   int brightness = 0;
   if (y > CLIFF) {
     brightness = MAX_BRIGHTNESS - (MAX_Y - y) * ((MAX_BRIGHTNESS - MID_BRIGHTNESS) / CLIFF_DEGREES);
   } else {
     brightness = ((y / (90 - CLIFF_DEGREES)) * (MID_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
   }
-  
-  
-  //brightness = min(pow(abs(event.orientation.y), 1.25) + MIN_BRIGHTNESS, MAX_BRIGHTNESS);
-  
-  Serial.print("Brightness: ");
-  Serial.print(brightness);
-  Serial.println("");
-
   FastLED.setBrightness(brightness);
   
   Fire2012WithPalette();
