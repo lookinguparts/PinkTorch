@@ -40,7 +40,7 @@
 #define MAX_Y 90.0
 #define CLIFF (MAX_Y - CLIFF_DEGREES)
 // LED Data
-bool gReverseDirection = true;
+bool gReverseDirection = false;
 CRGB leds[NUM_LEDS];
 CRGBPalette16 gPal;
 
