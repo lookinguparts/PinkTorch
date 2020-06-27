@@ -6,16 +6,35 @@
 #define LED_PIN     6
 #define COLOR_ORDER GRB
 #define CHIPSET     WS2813
-#define NUM_LEDS    212
+#define NUM_LEDS    219
 #define FRAMES_PER_SECOND 60
+
+// COOLING: How much does the air cool as it rises?
+// Less cooling = taller flames.  More cooling = shorter flames.
+// Default 55, suggested range 20-100
 #define COOLING  55
+
+// SPARKING: What chance (out of 255) is there that a new spark will be lit?
+// Higher chance = more roaring fire.  Lower chance = more flickery fire.
+// Default 120, suggested range 50-200.
 #define SPARKING 120
 
-// This gets nerfed by the call to setMaxPowerInVoltsAndMilliamps below
-#define BRIGHTNESS  255
+#define MAX_BRIGHTNESS 255
+#define MID_BRIGHTNESS 55
+#define MIN_BRIGHTNESS 10
+#define MAX_Y 90.0
+#define CLIFF_DEGREES 20.0
+#define CLIFF (MAX_Y - CLIFF_DEGREES)
+
+// the large the number, the less frequent
+// 60 is approximately once per second
+// 0 = disabled
+#define FLICKER_RANDOMNESS 180
+
 
 // LED Data
 bool gReverseDirection = false;
+long frame = 0;
 CRGB leds[NUM_LEDS];
 CRGBPalette16 gPal;
 
@@ -49,7 +68,6 @@ void setup() {
 
   // Initialize the LED stuff
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  FastLED.setBrightness( BRIGHTNESS );
   gPal = CRGBPalette16( CRGB::Black, CRGB::LightPink, CRGB::Pink,  CRGB::HotPink);
   
   // Adjust this to limit the amount of current flowing through Teensy
@@ -58,6 +76,7 @@ void setup() {
 }
 
 void loop() {
+  frame++;
   random16_add_entropy( random());
 
   sensors_event_t event;
@@ -70,9 +89,25 @@ void loop() {
   Serial.print("\tZ: ");
   Serial.print(event.orientation.z, 4);
   Serial.println("");
-  
-  FastLED.setBrightness( event.orientation.y / 3 );
 
+  int y = abs(event.orientation.y);
+  
+  int brightness = 0;
+  if (y > CLIFF) {
+    brightness = MAX_BRIGHTNESS - (MAX_Y - y) * ((MAX_BRIGHTNESS - MID_BRIGHTNESS) / CLIFF_DEGREES);
+  } else {
+    brightness = ((y / (90 - CLIFF_DEGREES)) * (MID_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
+  }
+  
+  
+  //brightness = min(pow(abs(event.orientation.y), 1.25) + MIN_BRIGHTNESS, MAX_BRIGHTNESS);
+  
+  Serial.print("Brightness: ");
+  Serial.print(brightness);
+  Serial.println("");
+
+  FastLED.setBrightness(brightness);
+  
   Fire2012WithPalette();
   FastLED.show();
   delay(1000 / FRAMES_PER_SECOND);
@@ -99,6 +134,14 @@ void Fire2012WithPalette() {
     heat[y] = qadd8( heat[y], random8(160, 255) );
   }
 
+  // Step 3.5 (pink triangle special)
+  // Randomly reduce the heat of every pixel by half 
+  if (random(0, FLICKER_RANDOMNESS) == 1) {
+    for (int i = 0 ; i < NUM_LEDS; i++) {
+      heat[i] = heat[i] / 2;
+    }
+  }
+  
   // Step 4.  Map from heat cells to LED colors
   for ( int j = 0; j < NUM_LEDS; j++) {
     // Scale the heat value from 0-255 down to 0-240
