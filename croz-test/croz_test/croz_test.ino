@@ -41,7 +41,6 @@
 #define CLIFF (MAX_Y - CLIFF_DEGREES)
 // LED Data
 bool gReverseDirection = false;
-long frame = 0;
 CRGB leds[NUM_LEDS];
 CRGBPalette16 gPal;
 
@@ -83,7 +82,6 @@ void setup() {
 }
 
 void loop() {
-  frame++;
   random16_add_entropy( random());
 
   sensors_event_t event;
@@ -96,12 +94,22 @@ void loop() {
   Serial.print("\tZ: ");
   Serial.print(event.orientation.z, 4);
   Serial.println("");
+  
+  // If the torch is at a negative Y-angle, reverse the flame 
+  gReverseDirection = event.orientation.y < 0;
 
+  // The flame goes between full brightness and mid-brightness over a sensitive
+  // period up until the "cliff". After that it gradually goes from mid-brightness
+  // to min brightness over a larger period.
   int y = abs(event.orientation.y);
   int brightness = 0;
   if (y > CLIFF) {
+    // Linear transitoin from cliff to fully upright
+    // Default = 90 to 70
     brightness = MAX_BRIGHTNESS - (MAX_Y - y) * ((MAX_BRIGHTNESS - MID_BRIGHTNESS) / CLIFF_DEGREES);
   } else {
+    // Linear transition from cliff to fully flat
+    // Default = 70 to 0
     brightness = ((y / (90 - CLIFF_DEGREES)) * (MID_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
   }
   FastLED.setBrightness(brightness);
