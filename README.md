@@ -1,6 +1,6 @@
 ## PinkTorch Setup
 ### Install Arduino IDE
-### Install reuired libraries over internet
+### Install required libraries over internet
   ####  Adafruit Unified Sensors 
   ####  Adafruit BNO055:1.4.3
   ####  FastLED 3.4.0
