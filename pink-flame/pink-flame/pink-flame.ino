@@ -54,7 +54,7 @@
 #define STROBE 1
 #define RAINBOW 2
 #define CHASE 3
-#define PATTERN_COUNT 4www
+#define PATTERN_COUNT 4
 
 // LED Data
 CRGB leds[NUM_LEDS];
