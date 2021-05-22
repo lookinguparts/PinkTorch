@@ -158,7 +158,7 @@ void setup() {
 
   // Adjust this to limit the amount of current flowing through Teensy
   // Up this from 250 when connecting directly to the battery pack
-  FastLED.setMaxPowerInVoltsAndMilliamps(5, 250);
+  FastLED.setMaxPowerInVoltsAndMilliamps(5, 2500);
 }
 
 void loop() {
