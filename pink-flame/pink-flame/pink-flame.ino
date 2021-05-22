@@ -39,16 +39,96 @@
 // Do not change
 #define MAX_Y 90.0
 #define CLIFF (MAX_Y - CLIFF_DEGREES)
+
+// Inversion Steps
+#define NOT_STARTED 0
+#define HALFWAY 1
+#define COMPLETE 2
+
+// Mode
+#define NORMAL_MODE 0
+#define EASTER_EGG_MODE 1
+
+// Patterns
+#define FIRE 0
+#define STROBE 1
+#define RAINBOW 2
+#define CHASE 3
+#define PATTERN_COUNT 4www
+
 // LED Data
-bool gReverseDirection = false;
 CRGB leds[NUM_LEDS];
 CRGBPalette16 gPal;
+
+// State
+unsigned long loopCount = 0;
+short currentMode = NORMAL_MODE;
+short inversionState = NOT_STARTED;
+short currentPattern = FIRE;
+bool isInverted = false;
+short recentInversionCount = 0;
+unsigned long countAtLastInversion = 0;
+
+// Strobe Pattern
+bool strobeOn = false;
+
+// Rainbow pattern
+long rainbowStart = 0;
+
+// Chase pattern
+#define CHASE_LEN (NUM_LEDS / 2)
+long chasePosition = 0;
+long chaseHue = 0;
 
 // Set the delay between BNO055 samples
 #define BNO055_SAMPLERATE_DELAY_MS (100)
 
 // Initialize the BNO055
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
+
+void easterEggCheck() {
+  // Detect the inversion
+  if (inversionState == NOT_STARTED && isInverted) {
+    inversionState = HALFWAY;
+  } else if (inversionState == HALFWAY && !isInverted) {
+    inversionState = COMPLETE;
+    recentInversionCount++;
+    countAtLastInversion = loopCount;
+    Serial.print("*** Inversion detected: ");
+    Serial.print(recentInversionCount);
+    Serial.println(" ***");
+
+    // In easter egg mode we toggle patterns
+    if (currentMode == EASTER_EGG_MODE) {
+      currentPattern++;
+      if (currentPattern == PATTERN_COUNT) {
+        currentPattern = FIRE;
+      }
+      Serial.print("*** Selected pattern: ");
+      Serial.print(currentPattern);
+      Serial.println(" ***");
+    }
+  }
+
+  // Forced delay between inversions to avoid false positives
+  if (inversionState == COMPLETE && countAtLastInversion + 50 < loopCount && !isInverted) {
+    inversionState = NOT_STARTED;
+    Serial.println("*** Inversion timeout expired ***");
+  }
+
+  // Force the required inversions within a short time period
+  if ((loopCount - countAtLastInversion) > 200 && recentInversionCount > 0) {
+    Serial.println("*** Resetting inversion count ***");
+    recentInversionCount = 0;
+  }
+
+  // Enter easter egg mode
+  if (recentInversionCount == 3 && currentMode == NORMAL_MODE) {
+    currentMode = EASTER_EGG_MODE;
+    currentPattern++;
+    Serial.println("*** EASTER EGG MODE UNLOCKED!!! ***");
+  }
+}
 
 void setup() {
   // Initialize I2C library
@@ -75,28 +155,36 @@ void setup() {
   // Initialize the LED stuff
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   gPal = CRGBPalette16( CRGB::Black, CRGB::LightPink, CRGB::Pink,  CRGB::HotPink);
-  
+
   // Adjust this to limit the amount of current flowing through Teensy
   // Up this from 250 when connecting directly to the battery pack
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 2500);
 }
 
 void loop() {
+  loopCount++;
   random16_add_entropy( random());
 
   sensors_event_t event;
   bno.getEvent(&event);
 
-  Serial.print("X: ");
-  Serial.print(event.orientation.x, 4);
-  Serial.print("\tY: ");
-  Serial.print(event.orientation.y, 4);
-  Serial.print("\tZ: ");
-  Serial.print(event.orientation.z, 4);
-  Serial.println("");
-  
-  // If the torch is at a negative Y-angle, reverse the flame 
-  gReverseDirection = event.orientation.y < 0;
+  if (loopCount % 10 == 0) {
+    Serial.print("X: ");
+    Serial.print(event.orientation.x, 4);
+    Serial.print("\tY: ");
+    Serial.print(event.orientation.y, 4);
+    Serial.print("\tZ: ");
+    Serial.print(event.orientation.z, 4);
+    Serial.print("\tcount: ");
+    Serial.print(loopCount);
+    Serial.println("");
+  }
+
+  // Detect if the torch is at a negative Y-angle for flame reversal and easter egg mode
+  isInverted = event.orientation.y < 0;
+
+  // Diddle the easter egg shit
+  easterEggCheck();
 
   // The flame goes between full brightness and mid-brightness over a sensitive
   // period up until the "cliff". After that it gradually goes from mid-brightness
@@ -113,10 +201,45 @@ void loop() {
     brightness = ((y / (90 - CLIFF_DEGREES)) * (MID_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
   }
   FastLED.setBrightness(brightness);
-  
-  Fire2012WithPalette();
+
+  if (currentPattern == STROBE) {
+    strobePattern();
+  } else if (currentPattern == RAINBOW) {
+    rainbowPattern();
+  } else if (currentPattern == CHASE) {
+    chasePattern();
+  } else {
+    Fire2012WithPalette();
+  }
+
   FastLED.show();
   delay(1000 / FRAMES_PER_SECOND);
+}
+
+void strobePattern() {
+  if (loopCount % 7 == 0) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = strobeOn ? CRGB::White : CRGB::Black;
+    }
+    strobeOn = !strobeOn;
+  }
+}
+
+void rainbowPattern() {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[(i + rainbowStart) % NUM_LEDS] = CHSV(i, 255, 255);
+  }
+  rainbowStart++;
+}
+
+void chasePattern() {
+  for (long i = chasePosition; i < (chasePosition + NUM_LEDS); i++) {
+    leds[i % NUM_LEDS] = (i < chasePosition || i > (chasePosition + CHASE_LEN))
+                         ? CHSV(0, 0, 0)
+                         : CHSV(chaseHue % 255, 255, 255);
+  }
+  chasePosition++;
+  chaseHue++;
 }
 
 // Fire pattern
@@ -141,13 +264,13 @@ void Fire2012WithPalette() {
   }
 
   // Step 3.5 (pink triangle special)
-  // Randomly reduce the heat of every pixel by half 
+  // Randomly reduce the heat of every pixel by half
   if (random(0, FLICKER_RANDOMNESS) == 1) {
     for (int i = 0 ; i < NUM_LEDS; i++) {
       heat[i] = heat[i] / 2;
     }
   }
-  
+
   // Step 4.  Map from heat cells to LED colors
   for ( int j = 0; j < NUM_LEDS; j++) {
     // Scale the heat value from 0-255 down to 0-240
@@ -155,7 +278,7 @@ void Fire2012WithPalette() {
     byte colorindex = scale8( heat[j], 240);
     CRGB color = ColorFromPalette( gPal, colorindex);
     int pixelnumber;
-    if ( gReverseDirection ) {
+    if ( isInverted ) {
       pixelnumber = (NUM_LEDS - 1) - j;
     } else {
       pixelnumber = j;
