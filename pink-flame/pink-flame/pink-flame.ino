@@ -54,7 +54,9 @@
 #define STROBE 1
 #define RAINBOW 2
 #define CHASE 3
-#define PATTERN_COUNT 4
+#define TWINKLE 4
+#define RAINBOW_TWINKLE 5
+#define PATTERN_COUNT 6
 
 // LED Data
 CRGB leds[NUM_LEDS];
@@ -208,6 +210,10 @@ void loop() {
     rainbowPattern();
   } else if (currentPattern == CHASE) {
     chasePattern();
+  } else if (currentPattern == TWINKLE) {
+    twinklePattern();
+  } else if (currentPattern == RAINBOW_TWINKLE) {
+    rainbowTwinklePattern();
   } else {
     Fire2012WithPalette();
   }
@@ -240,6 +246,18 @@ void chasePattern() {
   }
   chasePosition++;
   chaseHue++;
+}
+
+void twinklePattern() {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = random(100) > 90 ? CRGB::White : CRGB::Black;
+  }
+}
+
+void rainbowTwinklePattern() {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = random(100) > 90 ? CHSV(random(255), 255, 255) : CHSV(0, 0, 0);
+  }
 }
 
 // Fire pattern
