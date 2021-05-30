@@ -4,6 +4,7 @@
 
 // LED Constants
 #define LED_PIN     6
+#define BRD_LED_PIN 13
 #define COLOR_ORDER GRB
 #define CHIPSET     WS2813
 #define NUM_LEDS    219
@@ -169,6 +170,14 @@ void setup() {
     }
   }
 
+  //On Board LED blink for visual aid
+  pinMode(BRD_LED_PIN, OUTPUT);
+   //Onboard LED
+  digitalWrite(BRD_LED_PIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+  delay(1000);               
+  digitalWrite(BRD_LED_PIN, LOW);    // turn the LED off by making the voltage LOW
+  //delay(10000);   
+
   // Initialize the LED stuff
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   gPal = CRGBPalette16( CRGB::Black, CRGB::LightPink, CRGB::Pink,  CRGB::HotPink);
@@ -179,6 +188,9 @@ void setup() {
 }
 
 void loop() {
+
+             
+  
   loopCount++;
   random16_add_entropy( random());
 
