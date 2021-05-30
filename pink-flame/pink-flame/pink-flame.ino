@@ -51,12 +51,13 @@
 
 // Patterns
 #define FIRE 0
-#define STROBE 1
-#define RAINBOW 2
-#define CHASE 3
-#define TWINKLE 4
-#define RAINBOW_TWINKLE 5
-#define PATTERN_COUNT 6
+#define RAINBOW 1
+#define CHASE1 2
+#define CHASE2 3
+#define CHASE3 4
+#define TWINKLE 5
+#define STROBE 6
+#define PATTERN_COUNT 7
 
 // LED Data
 CRGB leds[NUM_LEDS];
@@ -81,6 +82,20 @@ long rainbowStart = 0;
 #define CHASE_LEN (NUM_LEDS / 2)
 long chasePosition = 0;
 long chaseHue = 0;
+
+// Chase2 pattern
+#define CHASE2_LEN1 (NUM_LEDS / 4)
+#define CHASE2_LEN2 (NUM_LEDS / 8)
+long chase2Position1 = 0;
+long chase2Position2 = NUM_LEDS / 2;
+long chase2Hue = 0;
+
+// Chase3 pattern
+#define CHASE3_LEN1 (NUM_LEDS / 4)
+#define CHASE3_LEN2 (NUM_LEDS / 4)
+long chase3Position1 = 0;
+long chase3Position2 = 2000000000;
+long chase3Hue = 0;
 
 // Set the delay between BNO055 samples
 #define BNO055_SAMPLERATE_DELAY_MS (100)
@@ -160,7 +175,7 @@ void setup() {
 
   // Adjust this to limit the amount of current flowing through Teensy
   // Up this from 250 when connecting directly to the battery pack
-  FastLED.setMaxPowerInVoltsAndMilliamps(5, 2500);
+  FastLED.setMaxPowerInVoltsAndMilliamps(5, 2000);
 }
 
 void loop() {
@@ -208,27 +223,22 @@ void loop() {
     strobePattern();
   } else if (currentPattern == RAINBOW) {
     rainbowPattern();
-  } else if (currentPattern == CHASE) {
+  } else if (currentPattern == CHASE1) {
     chasePattern();
+  } else if (currentPattern == CHASE2) {
+    chase2Pattern();
+  } else if (currentPattern == CHASE3) {
+    chase3Pattern();
   } else if (currentPattern == TWINKLE) {
     twinklePattern();
-  } else if (currentPattern == RAINBOW_TWINKLE) {
-    rainbowTwinklePattern();
+  } else if (currentPattern == STROBE) {
+    strobePattern();
   } else {
     Fire2012WithPalette();
   }
 
   FastLED.show();
   delay(1000 / FRAMES_PER_SECOND);
-}
-
-void strobePattern() {
-  if (loopCount % 7 == 0) {
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = strobeOn ? CRGB::White : CRGB::Black;
-    }
-    strobeOn = !strobeOn;
-  }
 }
 
 void rainbowPattern() {
@@ -241,22 +251,62 @@ void rainbowPattern() {
 void chasePattern() {
   for (long i = chasePosition; i < (chasePosition + NUM_LEDS); i++) {
     leds[i % NUM_LEDS] = (i < chasePosition || i > (chasePosition + CHASE_LEN))
-                         ? CHSV(0, 0, 0)
-                         : CHSV(chaseHue % 255, 255, 255);
+      ? CHSV(0, 0, 0)
+      : CHSV(chaseHue % 255, 255, 255);
   }
   chasePosition++;
   chaseHue++;
 }
 
+void chase2Pattern() {
+  for (long i = chase2Position1; i < (chase2Position1 + NUM_LEDS); i++) {
+    leds[i % NUM_LEDS] = (i < chase2Position1 || i > (chase2Position1 + CHASE2_LEN1))
+        ? CHSV(0, 0, 0)
+        : CHSV(chase2Hue % 255, 255, 255);
+  }
+  for (long i = chase2Position2; i < (chase2Position2 + NUM_LEDS); i++) {
+    leds[i % NUM_LEDS] = (i < chase2Position2 || i > (chase2Position2 + CHASE2_LEN2))
+        ? leds[i % NUM_LEDS]
+        : leds[i % NUM_LEDS] == CHSV(0, 0, 0) ? CHSV(chase2Hue % 255, 255, 255) : CHSV(chase2Hue * 2 % 255, 255, 255);
+  }
+  chase2Position1++;
+  chase2Position2 += 2;
+  chase2Hue++;
+}
+
+void chase3Pattern() {
+  for (long i = chase3Position1; i < (chase3Position1 + NUM_LEDS); i++) {
+    leds[i % NUM_LEDS] = (i < chase3Position1 || i > (chase3Position1 + CHASE3_LEN1))
+        ? CHSV(0, 0, 0)
+        : CHSV(chase3Hue % 255, 255, 255);
+  }
+  for (long i = chase3Position2; i < (chase3Position2 + NUM_LEDS); i++) {
+    leds[i % NUM_LEDS] = (i < chase3Position2 || i > (chase3Position2 + CHASE3_LEN2))
+        ? leds[i % NUM_LEDS]
+        : leds[i % NUM_LEDS] == CHSV(0, 0, 0) ? CHSV(chase3Hue % 255, 255, 255) : CHSV(chase3Hue * 2 % 255, 255, 255);
+  }
+  chase3Position1 += 2;
+  chase3Position2 -= 2;
+  chase3Hue++;
+}
+
 void twinklePattern() {
   for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = random(100) > 90 ? CRGB::White : CRGB::Black;
+    leds[i] = random(100) > 95 ? CRGB::White : CRGB::Black;
+  }
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (leds[i] == CHSV(0, 0, 0)) {
+      leds[i] = random(100) > 95 ? CHSV(random(255), 255, 255) : CHSV(0, 0, 0);
+    }
   }
 }
 
-void rainbowTwinklePattern() {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = random(100) > 90 ? CHSV(random(255), 255, 255) : CHSV(0, 0, 0);
+void strobePattern() {
+  if (loopCount % 7 == 0) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = strobeOn ? CRGB::White : CRGB::Black;
+    }
+    strobeOn = !strobeOn;
   }
 }
 
