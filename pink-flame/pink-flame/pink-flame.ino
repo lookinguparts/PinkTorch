@@ -178,19 +178,22 @@ void setup() {
   // Up this from 250 when connecting directly to the battery pack
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 2000);
 
-  // Onboard LED pin
+  // Onboard LED (2s indication at startup)
   pinMode(BRD_LED_PIN, OUTPUT);
-  digitalWrite(BRD_LED_PIN, HIGH);    // turn the LED off by making the voltage LOW
+  digitalWrite(BRD_LED_PIN, HIGH);
+  delay(2000);
+  digitalWrite(BRD_LED_PIN, LOW);
 }
 
 void loop() {  
   loopCount++;
   random16_add_entropy( random());
 
+  // Diddle the LED interestingly so we know shit has power
   if (loopCount % 10 == 0) {
-    digitalWrite(BRD_LED_PIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+    digitalWrite(BRD_LED_PIN, HIGH);
   } if (loopCount % 11 == 0) {
-    digitalWrite(BRD_LED_PIN, LOW);   // turn the LED on (HIGH is the voltage level)
+    digitalWrite(BRD_LED_PIN, LOW);
   }
   sensors_event_t event;
   bno.getEvent(&event);
