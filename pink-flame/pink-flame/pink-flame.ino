@@ -170,14 +170,6 @@ void setup() {
     }
   }
 
-  //On Board LED blink for visual aid
-  pinMode(BRD_LED_PIN, OUTPUT);
-   //Onboard LED
-  digitalWrite(BRD_LED_PIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(1000);               
-  digitalWrite(BRD_LED_PIN, LOW);    // turn the LED off by making the voltage LOW
-  //delay(10000);   
-
   // Initialize the LED stuff
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   gPal = CRGBPalette16( CRGB::Black, CRGB::LightPink, CRGB::Pink,  CRGB::HotPink);
@@ -185,15 +177,21 @@ void setup() {
   // Adjust this to limit the amount of current flowing through Teensy
   // Up this from 250 when connecting directly to the battery pack
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 2000);
+
+  // Onboard LED pin
+  pinMode(BRD_LED_PIN, OUTPUT);
+  digitalWrite(BRD_LED_PIN, HIGH);    // turn the LED off by making the voltage LOW
 }
 
-void loop() {
-
-             
-  
+void loop() {  
   loopCount++;
   random16_add_entropy( random());
 
+  if (loopCount % 10 == 0) {
+    digitalWrite(BRD_LED_PIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+  } if (loopCount % 11 == 0) {
+    digitalWrite(BRD_LED_PIN, LOW);   // turn the LED on (HIGH is the voltage level)
+  }
   sensors_event_t event;
   bno.getEvent(&event);
 
