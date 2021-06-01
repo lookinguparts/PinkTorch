@@ -2,6 +2,9 @@
 #include <FastLED.h>
 #include <Wire.h>
 
+// Installation Mode  
+#define USB_PORT_FACING_UP false
+
 // LED Constants
 #define LED_PIN     6
 #define BRD_LED_PIN 13
@@ -129,7 +132,7 @@ void easterEggCheck() {
   }
 
   // Forced delay between inversions to avoid false positives
-  if (inversionState == COMPLETE && countAtLastInversion + 50 < loopCount && !isInverted) {
+  if (inversionState == COMPLETE && countAtLastInversion + 30 < loopCount && !isInverted) {
     inversionState = NOT_STARTED;
     Serial.println("*** Inversion timeout expired ***");
   }
@@ -141,7 +144,7 @@ void easterEggCheck() {
   }
 
   // Enter easter egg mode
-  if (recentInversionCount == 3 && currentMode == NORMAL_MODE) {
+  if (recentInversionCount == 5 && currentMode == NORMAL_MODE) {
     currentMode = EASTER_EGG_MODE;
     currentPattern++;
     Serial.println("*** EASTER EGG MODE UNLOCKED!!! ***");
@@ -211,7 +214,9 @@ void loop() {
   }
 
   // Detect if the torch is at a negative Y-angle for flame reversal and easter egg mode
-  isInverted = event.orientation.y < 0;
+  isInverted = USB_PORT_FACING_UP 
+      ? event.orientation.y < 0 
+      : event.orientation.y > 0;
 
   // Diddle the easter egg shit
   easterEggCheck();
